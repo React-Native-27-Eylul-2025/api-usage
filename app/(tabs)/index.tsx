@@ -1,60 +1,82 @@
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 
-export default function HomeScreen() {
-  const [data, setData] = useState([])
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-  const getData = async() => {
-    const data = await fetch("https://jsonplaceholder.typicode.com/posts");
-    const jsonData = await data.json()
-    setData(jsonData);
-  }
-
+export default function Home(){
+  const [state, setState] = useState<Post[] | undefined>()
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<boolean>(false) 
+  
   useEffect(() => {
+    const getData = async() => {
+      setLoading(true)
+      setError(false)
+      try{
+        let data = await fetch("https://jsonplaceholder.typicode.com/posts");
+        let jsonData = await data.json()
+        setState(jsonData)
+      } catch (e) {
+        setError(true)
+        console.log(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     getData()
   }, [])
-
-  if (data.length === 0){
-    return <Text>Yükleniyor...</Text>
+  
+  
+  if (error) {
+    return (
+      <View style={{flex: 1}}><Text>Bir hata oluştu</Text></View>
+    )
   }
+  
+  if (loading){
+    return (
+      <View><ActivityIndicator size={"large"} /></View>
+    )
+  }
+
+  
 
   return (
     <FlatList
-      style={{ flex: 1, backgroundColor: "white" }}
-      contentContainerStyle={styles.container}
-      data={data}
+      data={state}
       renderItem={({ item }) => (
-        <View style={styles.renderItemContainer}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.desc}>{item.body}</Text>
-
-          <Text style={{textAlign: "right"}}>
-            <Text>ID {item.id}</Text>{" "}
-            <Text>posted by {item.userId}</Text>
-          </Text>
+        <View>
+          <Text style={{ fontSize: 24 }}>{item.title}</Text>
+          <Text style={{ color: "#808080ff" }}>{item.body}</Text>
+        </View>
+      )}
+      ListEmptyComponent={
+        <View>
+          <Text>Burada görülecek bir şey yok</Text>
+        </View>
+      }
+      ListHeaderComponent={
+        <View>
+            <Text style={{ textAlign: "center", fontSize: 20, marginVertical: 20 }}>Header</Text>
 
         </View>
+      }
+      ListFooterComponent={
+        <View>
+          <Text style={{ textAlign: "center" }}>Footer</Text>
+        </View>
+      }
+      ItemSeparatorComponent={() => (
+        <View
+          style={{ flex: 1, width: "100%", height: 1, borderTopWidth: 1 }}
+        />
       )}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 28,
-    textTransform: "capitalize",
-  },
-  container: {
-    padding: 16,
-  },
-  renderItemContainer: {
-    backgroundColor: "#f0f0f0ff",
-    marginBottom: 8,
-    padding: 12,
-    borderRadius: 4,
-  },
-  desc: {
-    fontSize: 12,
-    color: "#646464ff",
-  },
-});
